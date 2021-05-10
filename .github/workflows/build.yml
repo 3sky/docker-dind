@@ -12,7 +12,9 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     steps:
-      - id: get_tag
+      - name: Get tag
+        id: get_tag
         run: echo ::set-output name=TAG::$(echo $GITHUB_REF | cut -d / -f 3)
       - uses: actions/checkout@v2
+      - name: Build image
         run: docker build -f $(pwd)/Dockerfile -t $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }} $(pwd)
