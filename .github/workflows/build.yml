@@ -14,7 +14,12 @@ jobs:
     steps:
       - name: Get tag
         id: get_tag
-        run: echo ::set-output name=TAG::$(echo $GITHUB_REF | cut -d / -f 3)
+        run: echo ::set-output name=my_tag::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: set tag
+        uses: allenevans/set-env@v2.0.0
+        with:
+          TAG: ${{ steps.get_tag.outputs.my_tag }}
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -22,20 +27,20 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Build image
-        run: docker build -f $(pwd)/Dockerfile -t $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }} $(pwd)
+        run: docker build -f $(pwd)/Dockerfile -t $DOCKER_NAME:$TAG $(pwd)
       - name: Push to registry
-        run: docker push $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
+        run: docker push $DOCKER_NAME:$TAG
 
   run-container:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
       - name: Run the image
-        run: docker run --privileged $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }} docker --version
+        run: docker run --privileged $DOCKER_NAME:$TAG docker --version
 
   test-with-trivy:
     needs: run-container
-    runs-on: $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
+    runs-on: $DOCKER_NAME:$TAG
     steps:
       - name: Test image
-        run: trivy image --light $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
+        run: trivy image --light $DOCKER_NAME:$TAG
