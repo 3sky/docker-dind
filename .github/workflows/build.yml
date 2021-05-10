@@ -5,7 +5,7 @@ on:
     tags:
       - '*'
 env:
-  DOCKER_NAME: "docker-dind"
+  DOCKER_NAME: "3sky/docker-dind"
 
 jobs:
 
@@ -15,12 +15,27 @@ jobs:
       - name: Get tag
         id: get_tag
         run: echo ::set-output name=TAG::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Build image
         run: docker build -f $(pwd)/Dockerfile -t $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }} $(pwd)
+      - name: Push to registry
+        run: docker push $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
 
   run-container:
+    needs: build-image
     runs-on: ubuntu-latest
     steps:
       - name: Run the image
-        run: docker run --privileged docker:20.10 docker --version
+        run: docker run --privileged $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }} docker --version
+
+  test-with-trivy:
+    needs: run-container
+    runs-on: $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
+    steps:
+      - name: Test image
+        run: trivy image --light $DOCKER_NAME:${{ steps.get_tag.outputs.TAG }}
