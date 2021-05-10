@@ -28,19 +28,21 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build image
         run: docker build -f $(pwd)/Dockerfile -t $DOCKER_NAME:$TAG $(pwd)
+      - name: Tag again
+        run: docker tag $DOCKER_NAME:$TAG $DOCKER_NAME:latest
       - name: Push to registry
-        run: docker push $DOCKER_NAME:$TAG
+        run: docker push $DOCKER_NAME:$TAG && docker push $DOCKER_NAME:latest
 
   run-container:
     needs: build-image
     runs-on: ubuntu-latest
     steps:
       - name: Run the image
-        run: docker run --privileged $DOCKER_NAME:$TAG docker --version
+        run: docker run --privileged $DOCKER_NAME:latest docker --version
 
   test-with-trivy:
     needs: run-container
-    runs-on: $DOCKER_NAME:$TAG
+    runs-on: $DOCKER_NAME:latest
     steps:
       - name: Test image
-        run: trivy image --light $DOCKER_NAME:$TAG
+        run: trivy image --light $DOCKER_NAME:latest
