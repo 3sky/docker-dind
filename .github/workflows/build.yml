@@ -38,11 +38,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run the image
-        run: docker run --privileged $DOCKER_NAME:latest docker --version
-
-  test-with-trivy:
-    needs: run-container
-    runs-on: $DOCKER_NAME:latest
-    steps:
-      - name: Test image
-        run: trivy image --light $DOCKER_NAME:latest
+        run: docker run --privileged $DOCKER_NAME:latest trivy image --light $DOCKER_NAME:latest
